@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>课外阅读批注管理系统</title>
+	<script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.11/vue.min.js"></script>
+	<script src="https://cdn.bootcdn.net/ajax/libs/vue-router/3.4.3/vue-router.min.js"></script>
+	<script src="https://cdn.bootcdn.net/ajax/libs/element-ui/2.13.2/index.js"></script>
+	<link href="https://cdn.bootcdn.net/ajax/libs/element-ui/2.13.2/theme-chalk/index.css" rel="stylesheet">
+	<link href="https://cdn.bootcdn.net/ajax/libs/normalize/8.0.1/normalize.min.css" rel="stylesheet">
+	<link rel="stylesheet" href="css/index.css">
+	<link rel="stylesheet" href="css/skyeye-annotate.css">
+</head>
+
+<body>
+	<div id="app">
+		<router-view></router-view>
+	</div>
+
+	<!-- 登录页面 -->
+	<template id="login">
+		<div class="login-container">
+			<el-form :model="loginForm" class="login-form" label-position="left">
+				<div class="title-container">
+					<h3 class="title">课外阅读批注管理系统</h3>
+				</div>
+
+				<el-form-item prop="username">
+					<span class="svg-container">
+						账号
+					</span>
+					<el-input ref="username" v-model="loginForm.username" placeholder="Username" name="username"
+						type="text" tabindex="1" autocomplete="on" />
+				</el-form-item>
+
+				<el-form-item prop="password">
+					<span class="svg-container">
+						密码
+					</span>
+					<el-input ref="password" v-model="loginForm.password" type="password" placeholder="Password"
+						name="password" tabindex="2" autocomplete="on" @keyup="handleLogin" />
+				</el-form-item>
+
+				<el-button v-loading="loading" type="primary" style="width:100%;margin-bottom:30px;"
+					@click="handleLogin">登录
+				</el-button>
+
+			</el-form>
+
+		</div>
+
+	</template>
+	<!-- 登录页面 -->
+
+	<!-- Home页面 -->
+	<template id="home">
+		<div class="home-container">
+			<el-container>
+				<el-header>
+					<div class="title">
+						课外阅读管理系统
+					</div>
+					<el-menu :default-active="activeIndex" class="el-menu-demo" mode="horizontal" @select="handleSelect"
+						background-color="#545c64" text-color="#fff" router active-text-color="#ffd04b">
+						<el-submenu index="class-manage">
+							<template slot="title"><i class="el-icon-office-building"></i> 班级管理</template>
+							<el-menu-item index="class-manage">班级管理</el-menu-item>
+							<el-menu-item index="student-manage">学生信息</el-menu-item>
+						</el-submenu>
+						<el-submenu index="job-manage">
+							<template slot="title"><i class="el-icon-postcard"></i> 作业管理</template>
+							<el-menu-item index="job-manage">作业管理</el-menu-item>
+							<el-menu-item index="mark-job">批改作业</el-menu-item>
+						</el-submenu>
+					</el-menu>
+
+					<el-menu class=" el-menu-demo my" text-color="#fff" background-color="#545c64"
+						active-text-color="#ffd04b" router mode="horizontal" style="float: right">
+						<el-submenu>
+							<template slot="title"><i class="el-icon-user-solid"></i>admin</template>
+							<el-menu-item index="info">个人信息</el-menu-item>
+							<el-menu-item @click="$router.push('/')">退出登录</el-menu-item>
+						</el-submenu>
+
+					</el-menu>
+				</el-header>
+				<el-main>
+					<router-view></router-view>
+				</el-main>
+			</el-container>
+
+		</div>
+	</template>
+
+	<!-- Home页面 -->
+
+
+	<!-- 班级管理 -->
+	<template id="class_manage">
+		<div class="manage-page class-manage">
+			<div class="body_center">
+				<div class="operating">
+					<el-button type="primary" @click="showAdd">创建班级</el-button>
+				</div>
+
+				<el-table :data="classMessage" border style="width: 1000px">
+					<el-table-column prop="id" label="班级"></el-table-column>
+					<el-table-column prop="name" label="名字"></el-table-column>
+					<el-table-column prop="password" label="密码"></el-table-column>
+					<el-table-column prop="stuNumber" label="班级人数">
+					</el-table-column>
+
+					<el-table-column label="操作" width="150">
+						<template slot-scope="scope">
+							<el-button @click="handleClick(scope.row)" type="success" size="small">查看</el-button>
+							<el-button @click="handleDelete(scope.row)" type="danger" size="small">删除</el-button>
+						</template>
+					</el-table-column>
+				</el-table>
+			</div>
+
+
+			<el-dialog title="创建班级" width="600px" :visible.sync="addClassModel">
+				<el-form ref="form" :model="form" label-width="80px">
+					<el-form-item label="班级名称" prop="class">
+						<el-input v-model="form.class"></el-input>
+					</el-form-item>
+					<el-form-item label="学生人数" prop="num">
+						<el-input-number v-model="form.num"></el-input-number>
+					</el-form-item>
+					<el-form-item label="班级口号" prop="kouhao">
+						<el-input v-model="form.kouhao"></el-input>
+					</el-form-item>
+					<el-form-item label="班级目标" prop="mubiao">
+						<el-input v-model="form.mubiao"></el-input>
+					</el-form-item>
+					<el-form-item>
+						<el-button type="primary" @click="onSubmit">创建班级</el-button>
+						<el-button @click="closeAdd">取消</el-button>
+					</el-form-item>
+				</el-form>
+			</el-dialog>
+			<el-dialog :title="form.class" width="600px" :visible.sync="ClassInfoModel">
+				<el-form ref="form" :model="form" label-width="80px">
+					<el-form-item label="学生人数" prop="stuNumber">
+						<el-input-number disabled v-model="form.stuNumber"></el-input-number>
+					</el-form-item>
+					<el-form-item label="班长">
+						<el-input disabled v-model="form.name"></el-input>
+					</el-form-item>
+					<el-button type="primary" @click="StuInfo">学生信息</el-button>
+					<el-button @click="ClassInfoModel = false">返回</el-button>
+					</el-form-item>
+				</el-form>
+			</el-dialog>
+
+		</div>
+	</template>
+	<!-- 班级管理 -->
+
+
+	<!-- 学生管理 -->
+	<template id="student_manage">
+		<div class="manage-page class-manage">
+			<div class="body_center">
+				<div class="operating">
+					<el-button type="primary" @click="showAdd">添加学生</el-button>
+				</div>
+				<el-table :data="tableData" border style="width: 1000px">
+					<el-table-column prop="clas" label="班级">
+					</el-table-column>
+					<el-table-column prop="id" label="学号">
+					</el-table-column>
+					<el-table-column prop="name" label="姓名">
+					</el-table-column>
+					<el-table-column prop="stuNumber" label="性别">
+					</el-table-column>
+					<el-table-column prop="password" label="密码"></el-table-column>
+					<el-table-column label="操作" width="150">
+						<template slot-scope="scope">
+							<el-button @click="handleDelete(scope.row)" type="danger" size="small">删除</el-button>
+						</template>
+					</el-table-column>
+				</el-table>
+			</div>
+
+
+			<el-dialog title="添加学生" width="600px" :visible.sync="addClassModel">
+				<el-form ref="form" :model="form" label-width="80px">  
+					<el-form-item label="班级" prop="class">
+						<el-input v-model="form.clas"></el-input>
+					</el-form-item>
+					<el-form-item label="学号" prop="class">
+						<el-input v-model="form.id"></el-input>
+					</el-form-item>
+					<el-form-item label="学生名称" prop="class">
+						<el-input v-model="form.name"></el-input>
+					</el-form-item>
+					<el-form-item label="学生性别" prop="class">
+						<el-radio-group v-model="form.sex">
+							<el-radio label="1"> </el-radio>
+							<el-radio label="0"> </el-radio>
+						</el-radio-group>
+					</el-form-item>
+					<el-form-item label="密码" prop="class">
+						<el-input v-model="form.password"></el-input>
+					</el-form-item>
+					<el-form-item>
+						<el-button type="primary" @click="onSubmit">添加学生</el-button>
+						<el-button @click="closeAdd">取消</el-button>
+					</el-form-item>
+				</el-form>
+			</el-dialog>
+
+		</div>
+	</template>
+	<!-- 班级管理 -->
+
+
+	<!-- 作业管理 -->
+	<template id="job_manage">
+		<div class="manage-page job_manage">
+			<div class="body_center">
+				<div class="operating">
+					<el-button type="primary" @click="showAdd('self')">发布作业(自主命名)</el-button>
+					<el-button type="primary" @click="showAdd('affix')">发布作业(附件上传)</el-button>
+				</div>
+				<el-table :data="tableData" border style="width: 1000px">
+					<el-table-column prop="id" label="作业编号">
+					</el-table-column>
+					<el-table-column prop="uploader" label="班级">
+					</el-table-column>
+					<el-table-column prop="title" label="作业题目">
+						<template slot-scope="scope">
+							<div v-if="scope.row.title">
+								{{ scope.row.title }}
+							</div>
+						</template>
+					</el-table-column>
+					<el-table-column prop="endTime" label="完成时间"></el-table-column>
+					</el-table-column>
+
+					<el-table-column label="操作" width="150">
+						<template slot-scope="scope">
+							<el-button @click="handleClick(scope.row)" type="success" size="small">查看</el-button>
+							<el-button @click="handleDelete(scope.row)" type="danger" size="small">删除</el-button>
+						</template>
+					</el-table-column>
+				</el-table>
+
+				<el-dialog title="发布作业" width="600px" :visible.sync="PublishModel">
+					<el-form ref="form" :model="publish_form" label-width="80px">
+						<el-form-item label="班级" prop="class">
+							<el-input v-model="publish_form.class"></el-input>
+						</el-form-item>
+						<el-form-item label="作业题目" prop="name" v-if="publishType == 'self'">
+							<el-input v-model="publish_form.name"></el-input>
+						</el-form-item>
+						<el-form-item label="作业详情" prop="desc" v-if="publishType == 'self'">
+							<el-input type="textarea" v-model="publish_form.desc"></el-input>
+						</el-form-item>
+						<el-form-item label="提交时间">
+							<el-date-picker v-model="publish_form.date" type="datetime" placeholder="选择日期时间">
+							</el-date-picker>
+						</el-form-item>
+						<el-form-item label="">
+							<el-button type="primary" @click="Publish">确认发布</el-button>
+							<el-button @click="PublishModel = false">取消</el-button>
+						</el-form-item>
+					</el-form>
+				</el-dialog>
+
+				<el-dialog :title="form.uploader + '班的作业信息'" width="600px" :visible.sync="InfoModel">
+					<el-form ref="form" :model="form" label-width="100px">
+						<el-form-item label="作业题目" prop="num">
+							<el-input disabled v-if="form.title" v-model="form.title"></el-input>
+							<div v-if="form.fileList">
+								<img :src="form.fileList[0].url" alt="" style="width:200px">
+							</div>
+						</el-form-item>
+						<el-form-item label="完成时间">
+							<el-input disabled v-if="form.endTime" v-model="form.endTime"></el-input>
+						</el-form-item>
+						<el-form-item label="完成的情况">
+							<el-input disabled value="30%"></el-input>
+						</el-form-item>
+
+						<el-button @click="$router.push('mark-job')">批注作业</el-button>
+						<el-button @click="InfoModel = false; ShowUpdateModel()">修改作业</el-button>
+						<el-button @click="InfoModel = false">返回</el-button>
+						</el-form-item>
+					</el-form>
+				</el-dialog>
+
+				<el-dialog title="修改作业" width="600px" :visible.sync="UpdateModel">
+					<el-form ref="form" :model="update_form" label-width="80px">
+						<el-form-item label="作业题目" prop="name" v-if="!update_form.fileList">
+							<el-input v-model="update_form.name"></el-input>
+						</el-form-item>
+						<el-form-item label="作业详情" prop="desc" v-if="!update_form.fileList">
+							<el-input type="textarea" v-model="update_form.desc"></el-input>
+						</el-form-item>
+						<el-form-item label="提交时间">
+							<el-date-picker v-model="update_form.date" type="datetime" placeholder="选择日期时间">
+							</el-date-picker>
+						</el-form-item>
+						<el-form-item label="">
+							<el-button type="primary" @click="Update">修改</el-button>
+							<el-button @click="UpdateModel = false">取消</el-button>
+						</el-form-item>
+					</el-form>
+				</el-dialog>
+
+			</div>
+
+		</div>
+	</template>
+	<!-- 作业管理 -->
+
+	<!-- 批改作业 -->
+	<template id="mark_job">
+		<div class="manage-page mark_job">
+			<div class="body_center">
+				<div class="operating">
+				</div>
+				<el-table :data="tableData" border style="width: 1000px;">
+					<el-table-column prop="id" label="id">
+					</el-table-column>
+					<el-table-column prop="title" label="标题">
+					</el-table-column>
+					<el-table-column prop="status" label="提交状态">
+						<template slot-scope="scope">
+							<el-tag>{{scope.row.status ? '未提交' : '已提交'}}</el-tag>
+						</template>
+					</el-table-column>
+					<el-table-column label="操作" width="100">
+						<template slot-scope="scope">
+							<el-button :disabled="scope.row.status" @click="handleClick(scope.row)" type="success"
+								size="small">批注
+							</el-button>
+						</template>
+					</el-table-column>
+				</el-table>
+
+
+				<el-dialog title="作业情况" class="detail" fullscreen center :visible.sync="DetailModel">
+					<el-form ref="form" :model="form" label-width="80px">
+
+						<el-form-item label="作业题目" prop="name">
+							<p style="margin: 0;">{{form.name}}</p>
+						</el-form-item>
+						<el-form-item label="完成时间" prop="time">
+							<p style="margin: 0;">{{form.time}}</p>
+						</el-form-item>
+						<el-form-item label="作业详情" prop="desc">
+							<p style="line-height: 40px" id="container">
+								{{ form.desc }}
+							</p>
+						</el-form-item>
+					</el-form>
+
+					<template slot="footer">
+						<el-button type="primary" @click="DetailModel = false">批注完成</el-button>
+						<el-button @click="DetailModel = false">取消</el-button>
+					</template>
+				</el-dialog>
+			</div>
+		</div>
+	</template>
+	<!-- 批改作业 -->
+	<template id="InfoManage">
+		<div class="manage-page info_manage">
+			<div class="body_center">
+				<div class="operating">
+				</div>
+
+				<el-row :gutter="20" style="margin-top:10px;">
+					<el-col :span="8" :xs="24">
+						<div class="grid-content bg-purple">
+							<el-card class="box-card">
+								<div slot="header" class="clearfix">
+									<span>个人中心</span>
+								</div>
+								<div class="name-role">
+									<span class="sender">Admin - {{dataForm.nickName}}</span>
+								</div>
+								<div class="registe-info">
+									<span class="registe-info">
+										注册时间：
+										2020/8/22 16:40:33
+									</span>
+								</div>
+								<el-divider></el-divider>
+								<div class="personal-relation">
+									<div class="relation-item">手机号: <div style="float: right; ">{{dataForm.phone}}
+										</div>
+									</div>
+								</div>
+								<div class="personal-relation">
+									<div class="relation-item">所属企业: <div style="float: right; ">xx企业</div>
+									</div>
+								</div>
+								<div class="personal-relation">
+									<div class="relation-item">邮箱: <div style="float: right; ">{{dataForm.email}}
+										</div>
+									</div>
+								</div>
+							</el-card>
+						</div>
+					</el-col>
+					<el-col :span="16" :xs="24">
+						<div class="grid-content bg-purple">
+							<el-card class="box-card">
+								<div slot="header" class="clearfix">
+									<span>基本资料</span>
+								</div>
+								<div>
+									<el-form label-width="80px" v-model="u_dataForm" size="small"
+										label-position="right">
+										<el-form-item label="用户昵称" prop="nickName">
+											<el-input auto-complete="off" v-model="u_dataForm.nickName"></el-input>
+										</el-form-item>
+										<el-form-item label="手机号" prop="phone">
+											<el-input auto-complete="off" v-model="u_dataForm.phone"></el-input>
+										</el-form-item>
+										<el-form-item label="邮箱" prop="email">
+											<el-input maxlength="18" v-model="u_dataForm.email"></el-input>
+										</el-form-item>
+									</el-form>
+									<div slot="footer" class="dialog-footer">
+										<el-button type="primary" @click="update">修改</el-button>
+									</div>
+								</div>
+							</el-card>
+						</div>
+					</el-col>
+
+				</el-row>
+
+
+			</div>
+		</div>
+	</template>
+
+
+	<script src="js/views/login.js"></script>
+	<script src="js/views/home.js"></script>
+	<script src="js/views/class.js"></script>
+	<script src="js/views/job.js"></script>
+	<script src="js/views/student.js"></script>
+	<script src="js/views/info.js"></script>
+	<script src="js/router.js"></script>
+
+	<script type="text/javascript" src="js/jquery-2.0.3.min.js"></script>
+	<script type="text/javascript" src="js/rangy-core.js"></script>
+	<script type="text/javascript" src="js/rangy-cssclassapplier.js"></script>
+	<script type="text/javascript" src="js/skyeye-annotate.js"></script>
+
+	<script>
+		Vue.use(ELEMENT)
+		Vue.prototype.getID = function () {
+			return (Math.random() + '').slice(2, 8)
+		}
+		var app = new Vue({
+			el: '#app',
+			router
+		})
+	</script>
+</body>
+
+</html>
